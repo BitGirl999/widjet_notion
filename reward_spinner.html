@@ -1,0 +1,62 @@
+
+<style>
+  .reward-wrap { display: flex; flex-direction: column; align-items: center; padding: 2rem 1rem; gap: 1.5rem; }
+  .title { font-size: 18px; font-weight: 500; color: var(--color-text-primary); text-align: center; }
+  .subtitle { font-size: 14px; color: var(--color-text-secondary); text-align: center; margin-top: -1rem; }
+  .spin-btn { font-size: 15px; padding: 0.75rem 2.5rem; cursor: pointer; border-radius: var(--border-radius-lg); border: 0.5px solid var(--color-border-secondary); background: var(--color-background-primary); color: var(--color-text-primary); transition: background 0.15s, transform 0.1s; }
+  .spin-btn:hover { background: var(--color-background-secondary); }
+  .spin-btn:active { transform: scale(0.97); }
+  .result-box { width: 100%; max-width: 340px; min-height: 90px; border-radius: var(--border-radius-lg); border: 0.5px solid var(--color-border-tertiary); background: var(--color-background-secondary); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 1.25rem; }
+  .reward-icon { font-size: 36px; line-height: 1; }
+  .reward-text { font-size: 20px; font-weight: 500; color: var(--color-text-primary); text-align: center; }
+  .reward-hint { font-size: 13px; color: var(--color-text-secondary); text-align: center; }
+  .list-wrap { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 340px; }
+  .tag { font-size: 12px; padding: 4px 12px; border-radius: 999px; background: var(--color-background-secondary); color: var(--color-text-secondary); border: 0.5px solid var(--color-border-tertiary); }
+  @keyframes pop { 0% { transform: scale(0.8); opacity: 0; } 60% { transform: scale(1.08); } 100% { transform: scale(1); opacity: 1; } }
+  .pop { animation: pop 0.35s ease forwards; }
+</style>
+
+<div class="reward-wrap">
+  <h2 class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);">Рандомный выбор поощрения за 100% выполнение плана</h2>
+  <p class="title">Ты выполнила 100% плана!</p>
+  <p class="subtitle">Нажми, чтобы узнать своё поощрение</p>
+
+  <div class="result-box" id="result-box">
+    <div class="reward-hint">Твоя награда появится здесь</div>
+  </div>
+
+  <button class="spin-btn" onclick="spin()">Получить награду</button>
+
+  <div class="list-wrap">
+    <span class="tag">шоколад</span>
+    <span class="tag">сериал</span>
+    <span class="tag">кофе</span>
+    <span class="tag">купить книгу</span>
+    <span class="tag">купить вещь</span>
+  </div>
+</div>
+
+<script>
+const rewards = [
+  { text: "Шоколад", icon: "🍫" },
+  { text: "Серия любимого сериала", icon: "🎬" },
+  { text: "Чашка любимого кофе", icon: "☕" },
+  { text: "Купить книгу", icon: "📚" },
+  { text: "Купить приятную вещь", icon: "🛍️" },
+];
+
+function spin() {
+  const box = document.getElementById("result-box");
+  const r = rewards[Math.floor(Math.random() * rewards.length)];
+  box.innerHTML = `
+    <div class="reward-icon pop">${r.icon}</div>
+    <div class="reward-text pop" style="animation-delay:0.05s">${r.text}</div>
+    <div class="reward-hint pop" style="animation-delay:0.1s">Ты заслужила это!</div>
+  `;
+  box.querySelectorAll('.pop').forEach(el => {
+    el.style.opacity = 0;
+    void el.offsetWidth;
+    el.style.opacity = '';
+  });
+}
+</script>

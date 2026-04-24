@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Награда</title>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0a0a1a;
+    overflow: hidden;
+    font-family: 'Nunito', sans-serif;
+  }
+
+  #bg-canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .stage {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px 30px;
+    max-width: 600px;
+    width: 100%;
+  }
+
+  .reward-icon {
+    font-size: 120px;
+    line-height: 1;
+    margin-bottom: 32px;
+    display: block;
+    filter: drop-shadow(0 0 40px currentColor);
+    opacity: 0;
+    transform: scale(0.2) rotate(-20deg);
+    transition: none;
+  }
+
+  .reward-icon.show {
+    animation: iconPop 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  }
+
+  @keyframes iconPop {
+    0% { opacity: 0; transform: scale(0.2) rotate(-20deg); }
+    60% { opacity: 1; transform: scale(1.15) rotate(5deg); }
+    80% { transform: scale(0.95) rotate(-2deg); }
+    100% { opacity: 1; transform: scale(1) rotate(0deg); }
+  }
+
+  .reward-text {
+    font-family: 'Unbounded', sans-serif;
+    font-size: clamp(14px, 3.5vw, 22px);
+    font-weight: 700;
+    line-height: 1.5;
+    color: #ffffff;
+    opacity: 0;
+    transform: translateY(30px);
+    max-width: 520px;
+    text-shadow: 0 2px 20px rgba(0,0,0,0.5);
+  }
+
+  .reward-text.show {
+    animation: textSlide 0.6s ease-out 0.5s forwards;
+  }
+
+  @keyframes textSlide {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .reward-label {
+    font-family: 'Nunito', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.4);
+    margin-bottom: 16px;
+    opacity: 0;
+    animation: fadeIn 0.5s ease-out 0.1s forwards;
+  }
+
+  @keyframes fadeIn {
+    to { opacity: 1; }
+  }
+
+  .glow-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .glow-ring.show {
+    animation: ringPulse 2s ease-out 0.2s forwards;
+  }
+
+  @keyframes ringPulse {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+    30% { opacity: 0.6; }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(2.5); }
+  }
+
+  .particle {
+    position: fixed;
+    pointer-events: none;
+    z-index: 5;
+    border-radius: 50%;
+    animation: particleFly var(--dur) ease-out var(--delay) forwards;
+  }
+
+  @keyframes particleFly {
+    0% {
+      opacity: 1;
+      transform: translate(0, 0) scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(var(--tx), var(--ty)) scale(0);
+    }
+  }
+
+  .star-particle {
+    font-size: var(--size);
+    position: fixed;
+    pointer-events: none;
+    z-index: 5;
+    animation: starFall var(--dur) ease-in var(--delay) forwards;
+  }
+
+  @keyframes starFall {
+    0% { opacity: 1; transform: translate(0,0) rotate(0deg) scale(1); }
+    100% { opacity: 0; transform: translate(var(--tx), var(--ty)) rotate(var(--rot)) scale(0.2); }
+  }
+
+  /* Theme overlays */
+  .theme-mission { --accent: #FFD700; --glow: #FF6B35; }
+  .theme-dzerzh { --accent: #C0392B; --glow: #8E1A0E; }
+  .theme-houston { --accent: #0099FF; --glow: #004499; }
+  .theme-official { --accent: #FFD700; --glow: #FF9500; }
+  .theme-level { --accent: #00FF88; --glow: #00AA55; }
+  .theme-choco { --accent: #8B4513; --glow: #D2691E; }
+  .theme-ice { --accent: #87CEEB; --glow: #4169E1; }
+  .theme-syrок { --accent: #FFD700; --glow: #FFA500; }
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+
+<div class="stage" id="stage">
+  <div class="glow-ring" id="glowRing"></div>
+  <div class="reward-label">🏆 Твоя награда сегодня</div>
+  <span class="reward-icon" id="rewardIcon">🏆</span>
+  <div class="reward-text" id="rewardText">Загрузка...</div>
+</div>
+
+<script>
+const rewards = [
+  {
+    icon: '🕶️',
+    text: 'Миссия выполнена. Юля круче Тома Круза!',
+    theme: 'theme-mission',
+    bg: ['#1a0a2e','#16213e','#0f3460'],
+    accent: '#FFD700',
+    particles: 'stars',
+    animation: 'shake'
+  },
+  {
+    icon: '🔱',
+    text: 'Список пуст, совесть чиста, сердце горячее, а руки холодные. Как тебе такое, товарищ Дзержинский?!',
+    theme: 'theme-dzerzh',
+    bg: ['#1a0000','#2d0000','#1a0a00'],
+    accent: '#C0392B',
+    particles: 'fire',
+    animation: 'dramatic'
+  },
+  {
+    icon: '🚀',
+    text: 'Хьюстон, у нас проблема: "Закончились задачи! Перехожу в режим ЮЛЯ-ЛЕГЕНДА."',
+    theme: 'theme-houston',
+    bg: ['#000011','#001133','#000a22'],
+    accent: '#0099FF',
+    particles: 'space',
+    animation: 'launch'
+  },
+  {
+    icon: '🎉',
+    text: 'Твой список задач официально пуст. Официально наслаждайся этим моментом! Ееее!',
+    theme: 'theme-official',
+    bg: ['#1a1400','#2a2000','#1a1a00'],
+    accent: '#FFD700',
+    particles: 'confetti',
+    animation: 'bounce'
+  },
+  {
+    icon: '🤖',
+    text: 'Поздравляю! Твой уровень в игре "Взрослая жизнь" повышен. Бонус +100 к спокойствию. Твой текущий статус Терминатор Продуктивности',
+    theme: 'theme-level',
+    bg: ['#001a00','#002200','#001400'],
+    accent: '#00FF88',
+    particles: 'pixels',
+    animation: 'glitch'
+  },
+  {
+    icon: '🍫',
+    text: 'Шоколад',
+    theme: 'theme-choco',
+    bg: ['#1a0a00','#2d1400','#1a0d00'],
+    accent: '#D2691E',
+    particles: 'hearts',
+    animation: 'melt'
+  },
+  {
+    icon: '🍦',
+    text: 'Мороженое',
+    theme: 'theme-ice',
+    bg: ['#000d1a','#001133','#000a22'],
+    accent: '#87CEEB',
+    particles: 'snowflakes',
+    animation: 'float'
+  },
+  {
+    icon: '🧀',
+    text: 'Глазированный сырок',
+    theme: 'theme-syrок',
+    bg: ['#1a1400','#2a1f00','#1a1200'],
+    accent: '#FFD700',
+    particles: 'stars',
+    animation: 'spin'
+  }
+];
+
+const reward = rewards[Math.floor(Math.random() * rewards.length)];
+
+function applyTheme() {
+  const body = document.body;
+  body.style.background = `radial-gradient(ellipse at center, ${reward.bg[1]} 0%, ${reward.bg[0]} 50%, ${reward.bg[2]} 100%)`;
+}
+
+function setupCanvas() {
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const particles = [];
+  const count = 80;
+
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      r: Math.random() * 1.5 + 0.5,
+      speed: Math.random() * 0.3 + 0.1,
+      opacity: Math.random() * 0.5 + 0.1,
+      pulse: Math.random() * Math.PI * 2
+    });
+  }
+
+  let frame = 0;
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    frame++;
+    particles.forEach(p => {
+      p.y -= p.speed;
+      p.pulse += 0.02;
+      if (p.y < -5) p.y = canvas.height + 5;
+      const alpha = p.opacity * (0.7 + 0.3 * Math.sin(p.pulse));
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = reward.accent + Math.round(alpha * 255).toString(16).padStart(2, '0');
+      ctx.fill();
+    });
+    requestAnimationFrame(animate);
+  }
+  animate();
+}
+
+function spawnParticles() {
+  const cx = window.innerWidth / 2;
+  const cy = window.innerHeight / 2;
+  const type = reward.particles;
+
+  if (type === 'confetti') {
+    const colors = ['#FFD700','#FF6B6B','#4ECDC4','#45B7D1','#96E6A1','#F7DC6F','#BB8FCE'];
+    for (let i = 0; i < 80; i++) {
+      const el = document.createElement('div');
+      el.style.cssText = `
+        position: fixed; z-index: 5; pointer-events: none;
+        left: ${cx}px; top: ${cy}px;
+        width: ${Math.random()*10+5}px; height: ${Math.random()*6+3}px;
+        background: ${colors[Math.floor(Math.random()*colors.length)]};
+        border-radius: 2px;
+        --tx: ${(Math.random()-0.5)*800}px;
+        --ty: ${(Math.random()-0.5)*600+200}px;
+        --dur: ${Math.random()*1.5+1}s;
+        --delay: ${Math.random()*0.5}s;
+        animation: particleFly var(--dur) ease-out var(--delay) forwards;
+        transform-origin: center;
+      `;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 3000);
+    }
+  }
+
+  if (type === 'stars') {
+    const emojis = ['⭐','✨','🌟','💫','⚡'];
+    for (let i = 0; i < 30; i++) {
+      const el = document.createElement('div');
+      el.className = 'star-particle';
+      el.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+      el.style.cssText = `
+        left: ${cx + (Math.random()-0.5)*100}px;
+        top: ${cy + (Math.random()-0.5)*100}px;
+        --size: ${Math.random()*20+15}px;
+        --tx: ${(Math.random()-0.5)*700}px;
+        --ty: ${(Math.random()-0.5)*600}px;
+        --rot: ${(Math.random()-0.5)*720}deg;
+        --dur: ${Math.random()*1.5+1.2}s;
+        --delay: ${Math.random()*0.6}s;
+      `;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 3500);
+    }
+  }
+
+  if (type === 'space') {
+    const emojis = ['🌠','⭐','🪐','🌙','✨','💥'];
+    for (let i = 0; i < 25; i++) {
+      const el = document.createElement('div');
+      el.className = 'star-particle';
+      el.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+      el.style.cssText = `
+        left: ${cx + (Math.random()-0.5)*100}px;
+        top: ${cy + (Math.random()-0.5)*100}px;
+        --size: ${Math.random()*25+10}px;
+        --tx: ${(Math.random()-0.5)*900}px;
+        --ty: ${(Math.random()-0.5)*700}px;
+        --rot: ${(Math.random()-0.5)*360}deg;
+        --dur: ${Math.random()*2+1}s;
+        --delay: ${Math.random()*0.5}s;
+      `;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 4000);
+    }
+  }
+
+  if (type === 'fire') {
+    const emojis = ['🔥','💥','⚡','🌋'];
+    for (let i = 0; i < 20; i++) {
+      const el = document.createElement('div');
+      el.className = 'star-particle';
+      el.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+      el.style.cssText = `
+        left: ${cx + (Math.random()-0.5)*80}px;
+        top: ${cy + (Math.random()-0.5)*80}px;
+        --size: ${Math.random()*30+20}px;
+        --tx: ${(Math.random()-0.5)*500}px;
+        --ty: ${-(Math.random()*400+100)}px;
+        --rot: ${(Math.random()-0.5)*180}deg;
+        --dur: ${Math.random()*1.2+0.8}s;
+        --delay: ${Math.random()*0.4}s;
+      `;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 3000);
+    }
+  }
+
+  if (type === 'snowflakes') {
+    const emojis = ['❄️','🌨️','💎','🫧'];
+    for (let i = 0; i < 30; i++) {
+      const el = document.createElement('div');
+      el.className = 'star-particle';
+      el.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+      el.style.cssText = `
+        left: ${cx + (Math.random()-0.5)*100}px;
+        top: ${cy}px;
+        --size: ${Math.random()*20+12}px;
+        --tx: ${(Math.random()-0.5)*600}px;
+        --ty: ${Math.random()*400+100}px;
+        --rot: ${(Math.random()-0.5)*540}deg;
+        --dur: ${Math.random()*2+1.5}s;
+        --delay: ${Math.random()*0.7}s;
+      `;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 5000);
+    }
+  }
+
+  if (type === 'hearts') {
+    const emojis = ['🍫','❤️','💝','✨','🍬'];
+    for (let i = 0; i < 25; i++) {
+      const el = document.createElement('div');
+      el.className = 'star-particle';
+      el.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+      el.style.cssText = `
+        left: ${cx + (Math.random()-0.5)*100}px;
+        top: ${cy + (Math.random()-0.5)*100}px;
+        --size: ${Math.random()*25+15}px;
+        --tx: ${(Math.random()-0.5)*600}px;
+        --ty: ${(Math.random()-0.5)*500}px;
+        --rot: ${(Math.random()-0.5)*360}deg;
+        --dur: ${Math.random()*1.5+1}s;
+        --delay: ${Math.random()*0.5}s;
+      `;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 3500);
+    }
+  }
+
+  if (type === 'pixels') {
+    const colors = ['#00FF88','#00FFCC','#88FF00','#00FF44','#FFFFFF'];
+    for (let i = 0; i < 60; i++) {
+      const el = document.createElement('div');
+      el.style.cssText = `
+        position: fixed; z-index: 5; pointer-events: none;
+        left: ${cx}px; top: ${cy}px;
+        width: ${Math.random()*8+4}px; height: ${Math.random()*8+4}px;
+        background: ${colors[Math.floor(Math.random()*colors.length)]};
+        --tx: ${(Math.random()-0.5)*700}px;
+        --ty: ${(Math.random()-0.5)*600}px;
+        --dur: ${Math.random()*1.2+0.8}s;
+        --delay: ${Math.random()*0.4}s;
+        animation: particleFly var(--dur) ease-out var(--delay) forwards;
+      `;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 3000);
+    }
+  }
+}
+
+function playSound(type) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playTone(freq, start, duration, type='sine', gain=0.3) {
+      const osc = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+      osc.connect(gainNode);
+      gainNode.connect(ctx.destination);
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
+      gainNode.gain.setValueAtTime(0, ctx.currentTime + start);
+      gainNode.gain.linearRampToValueAtTime(gain, ctx.currentTime + start + 0.01);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + duration);
+      osc.start(ctx.currentTime + start);
+      osc.stop(ctx.currentTime + start + duration + 0.1);
+    }
+
+    if (type === 'mission') {
+      [523, 659, 784, 1047].forEach((f, i) => playTone(f, i*0.12, 0.3, 'square', 0.15));
+    } else if (type === 'dramatic') {
+      [220, 196, 165, 110].forEach((f, i) => playTone(f, i*0.2, 0.4, 'sawtooth', 0.1));
+    } else if (type === 'launch') {
+      for (let i = 0; i < 8; i++) {
+        playTone(200 + i * 80, i * 0.1, 0.2, 'sine', 0.1);
+      }
+    } else if (type === 'celebrate') {
+      [523,659,784,880,1047,1319].forEach((f, i) => playTone(f, i*0.08, 0.25, 'triangle', 0.15));
+    } else if (type === 'levelup') {
+      [392,440,523,659,784].forEach((f, i) => playTone(f, i*0.1, 0.2, 'square', 0.12));
+      playTone(1047, 0.5, 0.5, 'sine', 0.2);
+    } else if (type === 'sweet') {
+      [784,880,1047,784,1047].forEach((f, i) => playTone(f, i*0.1, 0.15, 'triangle', 0.15));
+    } else if (type === 'cool') {
+      [1047,880,784,659,523].forEach((f, i) => playTone(f, i*0.1, 0.2, 'sine', 0.15));
+    } else if (type === 'sparkle') {
+      [1319,1047,1319,1568].forEach((f, i) => playTone(f, i*0.08, 0.15, 'triangle', 0.12));
+    }
+  } catch(e) {}
+}
+
+const soundMap = ['mission','dramatic','launch','celebrate','levelup','sweet','cool','sparkle'];
+
+function init() {
+  applyTheme();
+  setupCanvas();
+
+  const icon = document.getElementById('rewardIcon');
+  const text = document.getElementById('rewardText');
+  const ring = document.getElementById('glowRing');
+
+  icon.textContent = reward.icon;
+  text.textContent = reward.text;
+
+  ring.style.background = `radial-gradient(circle, ${reward.accent}44, transparent 70%)`;
+  ring.style.boxShadow = `0 0 60px ${reward.accent}66`;
+
+  setTimeout(() => {
+    icon.classList.add('show');
+    ring.classList.add('show');
+    spawnParticles();
+    playSound(soundMap[rewards.indexOf(reward)]);
+  }, 300);
+
+  setTimeout(() => {
+    text.classList.add('show');
+  }, 600);
+}
+
+window.addEventListener('load', init);
+window.addEventListener('resize', () => {
+  const canvas = document.getElementById('bg-canvas');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+});
+</script>
+</body>
+</html>

@@ -214,6 +214,7 @@ const rewards = [
     text: 'Поздравляю! Твой уровень в игре "Взрослая жизнь" повышен. Бонус +100 к спокойствию. Твой текущий статус Терминатор Продуктивности',
     theme: 'theme-level',
     font: "'Press Start 2P', cursive",
+    fontSize: '18px',
     bg: ['#001a00','#002200','#001400'],
     accent: '#00FF88',
     particles: 'pixels',
@@ -421,6 +422,7 @@ function init() {
   icon.textContent = reward.icon;
   text.innerHTML = reward.text;
   text.style.fontFamily = reward.font;
+  text.style.fontSize = reward.fontSize || '';
 
   ring.style.background = `radial-gradient(circle, ${reward.accent}44, transparent 70%)`;
   ring.style.boxShadow = `0 0 60px ${reward.accent}66`;

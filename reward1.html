@@ -178,6 +178,7 @@ const rewards = [
     accent: '#FFD700',
     particles: 'stars',
     animation: 'shake'
+    soundFile: 'mission.mp3' // Путь к твоему файлу
   },
   {
     icon: '🦹',
@@ -188,6 +189,7 @@ const rewards = [
     accent: '#C0392B',
     particles: 'fire',
     animation: 'dramatic'
+    soundFile: 'mission.mp3' // Путь к твоему файлу
   },
   {
     icon: '🚀',
@@ -198,6 +200,7 @@ const rewards = [
     accent: '#0099FF',
     particles: 'space',
     animation: 'launch'
+    soundFile: 'mission.mp3' // Путь к твоему файлу
   },
   {
     icon: '🎉',
@@ -209,6 +212,7 @@ const rewards = [
     accent: '#FFD700',
     particles: 'confetti',
     animation: 'bounce'
+    soundFile: 'mission.mp3' // Путь к твоему файлу
   },
   {
     icon: '🤖',
@@ -220,6 +224,7 @@ const rewards = [
     accent: '#00FF88',
     particles: 'pixels',
     animation: 'glitch'
+    soundFile: 'mission.mp3' // Путь к твоему файлу
   },
   {
     icon: '🍫',
@@ -231,6 +236,7 @@ const rewards = [
     accent: '#D2691E',
     particles: 'hearts',
     animation: 'melt'
+    soundFile: 'mission.mp3' // Путь к твоему файлу
   },
   {
     icon: '🍧',
@@ -241,6 +247,7 @@ const rewards = [
     accent: '#87CEEB',
     particles: 'snowflakes',
     animation: 'float'
+    soundFile: 'mission.mp3' // Путь к твоему файлу
   },
   {
     icon: '🍬',
@@ -251,6 +258,7 @@ const rewards = [
     accent: '#FFD700',
     particles: 'stars',
     animation: 'spin'
+    soundFile: 'mission.mp3' // Путь к твоему файлу
   }
 ];
 
@@ -376,7 +384,15 @@ function spawnParticles() {
   }
 }
 
-function playSound(type) {
+ function playSound() {
+  if (reward.soundFile) {
+    const audio = new Audio(reward.soundFile);
+    audio.volume = 0.5; // Громкость от 0 до 1
+    audio.play().catch(e => console.log("Автовоспроизведение заблокировано браузером"));
+  }
+}
+ /*
+ function playSound(type) {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     function playTone(freq, start, duration, type='sine', gain=0.3) {
@@ -410,8 +426,9 @@ function playSound(type) {
     }
   } catch(e) {}
 }
+*/
 
-const soundMap = ['mission','dramatic','launch','celebrate','levelup','sweet','cool','sparkle'];
+/*const soundMap = ['mission','dramatic','launch','celebrate','levelup','sweet','cool','sparkle'];*/
 
 function init() {
   applyTheme();
@@ -433,7 +450,7 @@ function init() {
     icon.classList.add('show');
     ring.classList.add('show');
     spawnParticles();
-    playSound(soundMap[rewards.indexOf(reward)]);
+    playSound(); // было playSound(soundMap[rewards.indexOf(reward)]);
   }, 300);
 
   setTimeout(() => {
